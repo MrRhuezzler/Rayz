@@ -2,8 +2,11 @@
 #define __RENDERER_H__
 
 #include <memory>
-#include "image.h"
+
 #include "glm/glm.hpp"
+#include "jug/image.h"
+
+using namespace Jug;
 
 class Renderer
 {

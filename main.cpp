@@ -1,4 +1,9 @@
+#include "imgui.h"
+#include "jug/application.h"
+#include "jug/timer.h"
+#include "renderer.h"
 
+using namespace Jug;
 class ExampleLayer : public Layer
 {
 public:
@@ -11,10 +16,6 @@ public:
     {
         ImGui::Begin("Settings");
         ImGui::Text("Last Render: %.3fms", lastRenderTime);
-        // if (ImGui::Button("Render"))
-        // {
-        //     render();
-        // }
         ImGui::End();
 
         ImGui::Begin("Viewport");
@@ -32,7 +33,7 @@ public:
         Timer timer;
         renderer.onResize(viewportWidth, viewportHeight);
         renderer.render();
-        lastRenderTime = timer.elapsedMillis();
+        lastRenderTime = timer.getTimeElapsedMillis();
     }
 
 private:
@@ -41,3 +42,15 @@ private:
              viewportHeight = 0;
     float lastRenderTime = 0;
 };
+
+int main()
+{
+    Application *app = Application::createInstance("Rayz", 800, 600);
+
+    std::shared_ptr<Layer> layer = std::make_shared<ExampleLayer>();
+    app->addLayer(layer);
+
+    app->run();
+    delete app;
+    return 0;
+}

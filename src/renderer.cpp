@@ -15,7 +15,7 @@ void Renderer::onResize(uint32_t width, uint32_t height)
     }
     else
     {
-        finalImage = std::make_shared<Image>(width, height, ImageFormat::RGBA, nullptr);
+        finalImage = std::make_shared<Image>(width, height);
     }
 
     delete imageData;
