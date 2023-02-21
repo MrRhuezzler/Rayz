@@ -1,0 +1,3 @@
+[submodule "libs/jug"]
+	path = libs/jug
+	url = https://github.com/MrRhuezzler/Jug.git
