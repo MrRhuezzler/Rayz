@@ -1,3 +1,4 @@
+#include "imgui.h"
 #include <execution>
 #include "glm/gtc/random.hpp"
 #include "renderer.h"
@@ -90,107 +91,100 @@ void Renderer::resetFrameIndex()
     frameIndex = 1;
 }
 
+void Renderer::onUIRender()
+{
+    ImGui::Begin("Renderer");
+
+    ImGui::SeparatorText("Status");
+    ImGui::Text("Samples: %d / %d", frameIndex, settings.maxFrames);
+
+    ImGui::SeparatorText("Settings");
+    ImGui::Checkbox("Accumulate", &settings.accumulate);
+    ImGui::InputInt("Max Sample frames", &settings.maxFrames);
+
+    ImGui::End();
+}
+
 Renderer::Settings &Renderer::getSettings()
 {
     return settings;
 }
 
+Renderer::Status Renderer::getStatus()
+{
+    return {frameIndex};
+}
+
 glm::vec4 Renderer::perPixel(int x, int y)
 {
-    Ray ray;
+    Ray ray, scattered;
     ray.origin = activeCamera->getPosition();
     ray.direction = activeCamera->getRayDirections()[x + y * finalImage->getWidth()];
 
-    glm::vec3 color(0.0f);
-    glm::vec3 skyColor(0.53f, 0.81f, 0.92f);
+    HitPayload payload;
 
     float multiplier = 1.0f;
-    int bounces = 5;
 
+    glm::vec3 skyColor(0.5f, 0.7f, 1.0f);
+    glm::vec3 black(0.0f);
+    glm::vec3 color(1.0f);
+
+    int bounces = 10;
     for (int i = 0; i < bounces; i++)
     {
-        auto payload = traceRay(ray);
-        if (payload.hitDistance < 0)
+        if (activeScene->hit(ray, 0.001f, std::numeric_limits<float>::max(), payload))
         {
-            color += skyColor * multiplier;
+            glm::vec3 attenuation;
+            if (payload.mat->scatter(ray, payload, attenuation, scattered))
+            {
+                color *= attenuation;
+            }
+            else
+            {
+                color *= black;
+            }
+
+            ray.origin = scattered.origin;
+            ray.direction = scattered.direction;
+        }
+        else
+        {
+            color *= skyColor;
             break;
         }
-
-        const Sphere &closetSphere = activeScene->spheres[payload.objectIndex];
-        glm::vec3 lightDir = glm::normalize(glm::vec3(-1, -1, -1));
-        float lightIntensity = glm::max(glm::dot(payload.worldNormal, -lightDir), 0.0f); // == cos(angle)
-
-        glm::vec3 sphereColor = closetSphere.mat.albedo;
-        sphereColor *= lightIntensity;
-        color += sphereColor * multiplier;
-
-        multiplier *= 0.3f;
-
-        ray.origin = payload.worldPosition + payload.worldNormal * 0.0001f;
-        glm::vec3 roughnessMul = glm::vec3(glm::linearRand(glm::vec2(-0.5f), glm::vec2(0.5f)), 0);
-        glm::vec3 reflectNormal = payload.worldNormal + closetSphere.mat.roughness * roughnessMul;
-        ray.direction = glm::reflect(ray.direction, reflectNormal);
     }
 
     return glm::vec4(color, 1.0f);
 }
 
-Renderer::HitPayload Renderer::traceRay(const Ray &ray)
-{
+// HitPayload Renderer::traceRay(const Ray &ray)
+// {
+// }
 
-    int closetIndex = -1;
-    float hitDistance = std::numeric_limits<float>::max();
+// HitPayload Renderer::closetHit(const Ray &ray, float hitDistance, int objectIndex)
+// {
 
-    for (int i = 0; i < activeScene->spheres.size(); i++)
-    {
-        const Sphere &sphere = activeScene->spheres[i];
-        glm::vec3 origin = ray.origin - sphere.position;
-        float a = glm::dot(ray.direction, ray.direction);
-        float b = 2.0f * glm::dot(origin, ray.direction);
-        float c = glm::dot(origin, origin) - sphere.radius * sphere.radius;
+//     HitPayload payload;
+//     payload.hitDistance = hitDistance;
+//     payload.objectIndex = objectIndex;
 
-        float discriminant = b * b - 4 * a * c;
-        if (discriminant < 0.0f)
-            continue;
+//     const Sphere &closetSphere = activeScene->spheres[objectIndex];
 
-        float closetT = (-b - glm::sqrt(discriminant)) / (2.0f * a);
-        if (closetT > 0.0f && closetT < hitDistance)
-        {
-            hitDistance = closetT;
-            closetIndex = i;
-        }
-    }
+//     glm::vec3 origin = ray.origin - closetSphere.position;
+//     payload.worldPosition = origin + hitDistance * ray.direction;
+//     payload.worldNormal = glm::normalize(payload.worldPosition);
 
-    if (closetIndex < 0)
-        return miss(ray);
+//     payload.worldPosition += closetSphere.position;
 
-    return closetHit(ray, hitDistance, closetIndex);
-}
+//     return payload;
+// }
 
-Renderer::HitPayload Renderer::closetHit(const Ray &ray, float hitDistance, int objectIndex)
-{
-
-    Renderer::HitPayload payload;
-    payload.hitDistance = hitDistance;
-    payload.objectIndex = objectIndex;
-
-    const Sphere &closetSphere = activeScene->spheres[objectIndex];
-
-    glm::vec3 origin = ray.origin - closetSphere.position;
-    payload.worldPosition = origin + hitDistance * ray.direction;
-    payload.worldNormal = glm::normalize(payload.worldPosition);
-
-    payload.worldPosition += closetSphere.position;
-
-    return payload;
-}
-
-Renderer::HitPayload Renderer::miss(const Ray &ray)
-{
-    Renderer::HitPayload payload;
-    payload.hitDistance = -1;
-    return payload;
-}
+// HitPayload Renderer::miss(const Ray &ray)
+// {
+//     HitPayload payload;
+//     payload.hitDistance = -1;
+//     return payload;
+// }
 
 uint32_t Renderer::convertToABGR(const glm::vec4 &color)
 {

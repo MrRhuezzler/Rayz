@@ -1,3 +1,5 @@
+#include <memory>
+
 #include "imgui.h"
 #include "glm/gtc/type_ptr.hpp"
 
@@ -15,21 +17,18 @@ public:
     ExampleLayer()
         : camera(45.0f, 0.1f, 100.0f)
     {
-        {
-            Sphere sphere;
-            sphere.position = {0.0f, 0.0f, 0.0f};
-            sphere.radius = 0.5f;
-            sphere.mat.albedo = {1.0f, 0.0f, 1.0f};
-            scene.spheres.push_back(sphere);
-        }
+        auto material_ground = std::make_shared<Lambertian>(glm::vec3(0.8, 0.8, 0.0));
+        auto material_center = std::make_shared<Lambertian>(glm::vec3(0.7, 0.3, 0.3));
+        // auto material_center = std::make_shared<Dieletric>(1.5f);
+        // auto material_left = std::make_shared<Metal>(glm::vec3(0.8, 0.8, 0.8), 0.3);
+        auto material_left = std::make_shared<Dieletric>(1.5f);
+        auto material_right = std::make_shared<Metal>(glm::vec3(0.8, 0.6, 0.2), 0.6);
 
-        {
-            Sphere sphere;
-            sphere.position = {1.0f, 0.0f, -5.0f};
-            sphere.radius = 1.5f;
-            sphere.mat.albedo = {0.2f, 0.3f, 1.0f};
-            scene.spheres.push_back(sphere);
-        }
+        scene.add(std::make_shared<Sphere>(glm::vec3(0.0, -100.5, -1.0), 100.0f, material_ground));
+        scene.add(std::make_shared<Sphere>(glm::vec3(0.0, 0.0, -1.0), 0.5f, material_center));
+        scene.add(std::make_shared<Sphere>(glm::vec3(-1.0, 0.0, -1.0), 0.5f, material_left));
+        scene.add(std::make_shared<Sphere>(glm::vec3(-1.0, 0.0, -1.0), -0.4, material_left));
+        scene.add(std::make_shared<Sphere>(glm::vec3(1.0, 0.0, -1.0), 0.5f, material_right));
     }
 
     virtual void OnUpdate(float ts) override
@@ -40,30 +39,32 @@ public:
 
     virtual void OnUIRender() override
     {
-        ImGui::Begin("Settings");
+        ImGui::Begin("Status");
         ImGui::Text("Last Render: %.3fms", lastRenderTime);
         ImGui::Text("Frame Rate: %.3fFPS", frameRate);
         ImGui::End();
 
-        ImGui::Begin("Properties");
-        for (size_t i = 0; i < scene.spheres.size(); i++)
-        {
-            ImGui::PushID(i);
-            Sphere &sphere = scene.spheres[i];
-            if (ImGui::DragFloat3("Position", glm::value_ptr(sphere.position), 0.1f))
-                renderer.resetFrameIndex();
-            if (ImGui::DragFloat("Radius", &sphere.radius, 0.01f))
-                renderer.resetFrameIndex();
-            if (ImGui::ColorEdit3("Albedo", glm::value_ptr(sphere.mat.albedo)))
-                renderer.resetFrameIndex();
-            if (ImGui::DragFloat("Roughness", &sphere.mat.roughness, 0.01f))
-                renderer.resetFrameIndex();
-            if (ImGui::DragFloat("Metallic", &sphere.mat.metallic, 0.01f))
-                renderer.resetFrameIndex();
-            ImGui::Separator();
-            ImGui::PopID();
-        }
-        ImGui::End();
+        renderer.onUIRender();
+
+        // ImGui::Begin("Properties");
+        // for (size_t i = 0; i < scene.spheres.size(); i++)
+        // {
+        //     ImGui::PushID(i);
+        //     Sphere &sphere = scene.spheres[i];
+        //     if (ImGui::DragFloat3("Position", glm::value_ptr(sphere.position), 0.1f))
+        //         renderer.resetFrameIndex();
+        //     if (ImGui::DragFloat("Radius", &sphere.radius, 0.01f))
+        //         renderer.resetFrameIndex();
+        //     if (ImGui::ColorEdit3("Albedo", glm::value_ptr(sphere.mat.albedo)))
+        //         renderer.resetFrameIndex();
+        //     if (ImGui::DragFloat("Roughness", &sphere.mat.roughness, 0.01f))
+        //         renderer.resetFrameIndex();
+        //     if (ImGui::DragFloat("Metallic", &sphere.mat.metallic, 0.01f))
+        //         renderer.resetFrameIndex();
+        //     ImGui::Separator();
+        //     ImGui::PopID();
+        // }
+        // ImGui::End();
 
         ImGui::Begin("Viewport");
         viewportWidth = ImGui::GetContentRegionAvail().x;

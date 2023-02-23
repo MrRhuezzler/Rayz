@@ -8,7 +8,7 @@
 
 #include "camera.h"
 #include "ray.h"
-#include "scene.h"
+#include "hittable.h"
 
 using namespace Jug;
 
@@ -18,27 +18,28 @@ public:
     struct Settings
     {
         bool accumulate = true;
-        int maxFrames = 60;
+        int maxFrames = 1000;
+    };
+
+    struct Status
+    {
+        int currentSample = 0;
     };
 
     Renderer();
     void onResize(uint32_t width, uint32_t height);
     void render(const Scene &scene, const Camera &camera);
     void resetFrameIndex();
-    Settings &getSettings();
 
-    std::shared_ptr<Image> getFinalImage();
+    void onUIRender();
+
+    Settings &getSettings();
+    Status getStatus();
+
+    std::shared_ptr<Image>
+    getFinalImage();
 
 private:
-    struct HitPayload
-    {
-        float hitDistance;
-        glm::vec3 worldPosition;
-        glm::vec3 worldNormal;
-
-        int objectIndex;
-    };
-
     const Camera *activeCamera;
     const Scene *activeScene;
     Settings settings;
@@ -52,9 +53,9 @@ private:
     std::vector<int> verticalIterator, horizontalIterator;
 
     glm::vec4 perPixel(int x, int y);
-    HitPayload traceRay(const Ray &ray);
-    HitPayload closetHit(const Ray &ray, float hitDistance, int objectIndex);
-    HitPayload miss(const Ray &ray);
+    // HitPayload traceRay(const Ray &ray);
+    // HitPayload closetHit(const Ray &ray, float hitDistance, int objectIndex);
+    // HitPayload miss(const Ray &ray);
 
     static uint32_t convertToABGR(const glm::vec4 &color);
 };
