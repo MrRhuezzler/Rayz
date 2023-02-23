@@ -46,7 +46,7 @@ private:
     Settings settings;
 
     std::shared_ptr<Image> finalImage;
-    uint32_t *imageDataToTexture;
+    uint32_t *imageDataToTexture = nullptr;
     glm::vec4 *accumulationData = nullptr;
 
     int frameIndex = 1;

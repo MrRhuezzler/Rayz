@@ -48,7 +48,7 @@ public:
 class Dieletric : public Material
 {
 public:
-    Dieletric(double index_of_refraction);
+    Dieletric(const glm::vec3 &albedo, double index_of_refraction);
     virtual bool scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &attenuation, Ray &scattered) const override;
 
 private:
@@ -56,5 +56,6 @@ private:
     static float reflectance(float cosine, float ref_idx);
 
 public:
+    glm::vec3 albedo;
     double ir;
 };

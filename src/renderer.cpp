@@ -45,17 +45,20 @@ void Renderer::render(const Scene &scene, const Camera &camera)
     if (frameIndex == 1)
         memset(accumulationData, 0, finalImage->getWidth() * finalImage->getHeight() * sizeof(glm::vec4));
 
-#define MT
+// #define MT
 #ifndef MT
     for (int y = 0; y < finalImage->getHeight(); y++)
     {
         for (int x = 0; x < finalImage->getWidth(); x++)
         {
-            // ray.direction = camera.getRayDirections()[x + y * finalImage->getWidth()];
-            // auto color = traceRay(ray);
             auto color = perPixel(x, y);
-            color = glm::clamp(color, glm::vec4(0.0f), glm::vec4(1.0f));
-            imageData[x + y * finalImage->getWidth()] = convertToABGR(color);
+            if (frameIndex < settings.maxFrames)
+                accumulationData[x + y * finalImage->getWidth()] += color;
+
+            glm::vec4 accumulatedColor = accumulationData[x + y * finalImage->getWidth()];
+            accumulatedColor /= (float)frameIndex;
+            accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
+            imageDataToTexture[x + y * finalImage->getWidth()] = convertToABGR(accumulatedColor);
         }
     }
 #else

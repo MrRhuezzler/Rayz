@@ -21,8 +21,30 @@ public:
     float radius;
     std::shared_ptr<Material> mat;
 
-    Sphere();
     Sphere(glm::vec3 center, float radius, std::shared_ptr<Material> mat);
+
+    virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
+};
+
+class Plane : public Hittable
+{
+public:
+    glm::vec3 position;
+    glm::vec3 normal;
+    std::shared_ptr<Material> mat;
+
+    Plane(glm::vec3 position, glm::vec3 normal, std::shared_ptr<Material> mat);
+
+    virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
+};
+
+class Triangle : public Hittable
+{
+public:
+    glm::vec3 v0, v1, v2;
+    std::shared_ptr<Material> mat;
+
+    Triangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, std::shared_ptr<Material> mat);
 
     virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
 };

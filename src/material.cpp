@@ -29,14 +29,14 @@ bool Metal::scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &attenu
     return dot(scatteredDirection, payload.worldNormal) > 0;
 }
 
-Dieletric::Dieletric(double index_of_refraction)
-    : ir(index_of_refraction)
+Dieletric::Dieletric(const glm::vec3 &albedo, double index_of_refraction)
+    : ir(index_of_refraction), albedo(albedo)
 {
 }
 
 bool Dieletric::scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &attenuation, Ray &scattered) const
 {
-    attenuation = glm::vec3(1.0f, 1.0f, 1.0f);
+    attenuation = albedo;
     float ratio = payload.frontFace ? (1.0 / ir) : ir;
 
     glm::vec3 normalized = glm::normalize(ray.direction);

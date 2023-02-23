@@ -21,14 +21,20 @@ public:
         auto material_center = std::make_shared<Lambertian>(glm::vec3(0.7, 0.3, 0.3));
         // auto material_center = std::make_shared<Dieletric>(1.5f);
         // auto material_left = std::make_shared<Metal>(glm::vec3(0.8, 0.8, 0.8), 0.3);
-        auto material_left = std::make_shared<Dieletric>(1.5f);
+        auto material_left = std::make_shared<Dieletric>(glm::vec3(0.1, 0.5, 0.6), 1.5f);
         auto material_right = std::make_shared<Metal>(glm::vec3(0.8, 0.6, 0.2), 0.6);
+        auto mirror = std::make_shared<Dieletric>(glm::vec3(0.9, 0.5, 0.0), 2.0f);
 
-        scene.add(std::make_shared<Sphere>(glm::vec3(0.0, -100.5, -1.0), 100.0f, material_ground));
-        scene.add(std::make_shared<Sphere>(glm::vec3(0.0, 0.0, -1.0), 0.5f, material_center));
-        scene.add(std::make_shared<Sphere>(glm::vec3(-1.0, 0.0, -1.0), 0.5f, material_left));
-        scene.add(std::make_shared<Sphere>(glm::vec3(-1.0, 0.0, -1.0), -0.4, material_left));
-        scene.add(std::make_shared<Sphere>(glm::vec3(1.0, 0.0, -1.0), 0.5f, material_right));
+        // scene.add(std::make_shared<Sphere>(glm::vec3(0.0, -100.5, -1.0), 100.0f, material_ground));
+        scene.add(std::make_shared<Plane>(glm::vec3(0.0, -0.5f, 0.0), glm::vec3(0.0f, 1.0f, 0.0f), mirror));
+        // scene.add(std::make_shared<Sphere>(glm::vec3(0.0, 0.0, -1.0), 0.5f, material_center));
+
+        scene.add(std::make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 5.0f, -5.0f), glm::vec3(-5.0f, 0.0f, 0.0f), material_center));
+        scene.add(std::make_shared<Triangle>(glm::vec3(-6.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 5.0f, -5.0f), glm::vec3(-6.0f, 5.0f, -5.0f), material_center));
+
+        // scene.add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, 0.0f), 0.5f, material_ground));
+        // scene.add(std::make_shared<Sphere>(glm::vec3(0.0f, 5.0f, 0.0f), 0.5f, material_ground));
+        // scene.add(std::make_shared<Sphere>(glm::vec3(-5.0f, 0.0f, 0.0f), 0.5f, material_ground));
     }
 
     virtual void OnUpdate(float ts) override
