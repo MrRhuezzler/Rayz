@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.12)
 project(rayz)
 
+set(CMAKE_CXX_STANDARD 17)
+
 option(BUILD_STATIC_LIBS "Build Static Library" ON)
 option(BUILD_SHARED_LIBS "Build Shared Library" OFF)
 
@@ -34,4 +36,5 @@ target_link_libraries(
     ${GLEW_LIBRARIES} 
     ${OPENGL_LIBRARIES}
     jug
+    "tbb"
 )

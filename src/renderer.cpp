@@ -1,3 +1,5 @@
+#include <execution>
+#include "glm/gtc/random.hpp"
 #include "renderer.h"
 
 Renderer::Renderer()
@@ -18,63 +20,176 @@ void Renderer::onResize(uint32_t width, uint32_t height)
         finalImage = std::make_shared<Image>(width, height);
     }
 
-    delete imageData;
+    delete[] imageData;
     imageData = new uint32_t[width * height];
+
+    delete[] accumulationData;
+    accumulationData = new glm::vec4[width * height];
+
+    verticalIterator.resize(height);
+    for (int i = 0; i < height; i++)
+        verticalIterator[i] = i;
+
+    horizontalIterator.resize(width);
+    for (int i = 0; i < width; i++)
+        horizontalIterator[i] = i;
 }
 
-void Renderer::render()
+void Renderer::render(const Scene &scene, const Camera &camera)
 {
-    for (uint32_t y = 0; y < finalImage->getHeight(); y++)
+    activeCamera = &camera;
+    activeScene = &scene;
+
+    if (frameIndex == 1)
+        memset(accumulationData, 0, finalImage->getWidth() * finalImage->getHeight() * sizeof(glm::vec4));
+
+#define MT
+#ifndef MT
+    for (int y = 0; y < finalImage->getHeight(); y++)
     {
-        for (uint32_t x = 0; x < finalImage->getWidth(); x++)
+        for (int x = 0; x < finalImage->getWidth(); x++)
         {
-            // 0 -> 1
-            glm::vec2 coord = {(float)x / (float)finalImage->getWidth(), (float)y / (float)finalImage->getHeight()};
-            coord = coord * 2.0f - 1.0f;
-
-            auto color = perPixel(coord);
+            // ray.direction = camera.getRayDirections()[x + y * finalImage->getWidth()];
+            // auto color = traceRay(ray);
+            auto color = perPixel(x, y);
             color = glm::clamp(color, glm::vec4(0.0f), glm::vec4(1.0f));
-
             imageData[x + y * finalImage->getWidth()] = convertToABGR(color);
         }
     }
+#else
+    std::for_each(std::execution::par, verticalIterator.begin(), verticalIterator.end(),
+                  [this](int y)
+                  {
+                      std::for_each(std::execution::par, horizontalIterator.begin(), horizontalIterator.end(),
+                                    [this, y](int x)
+                                    {
+                                        auto color = perPixel(x, y);
+                                        if (frameIndex < settings.maxFrames)
+                                            accumulationData[x + y * finalImage->getWidth()] += color;
+
+                                        glm::vec4 accumulatedColor = accumulationData[x + y * finalImage->getWidth()];
+                                        accumulatedColor /= (float)frameIndex;
+                                        accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
+                                        imageData[x + y * finalImage->getWidth()] = convertToABGR(accumulatedColor);
+                                    });
+                  });
+#endif
     finalImage->setData(imageData);
+
+    if (settings.accumulate)
+    {
+        if (frameIndex < settings.maxFrames)
+            frameIndex++;
+    }
+    else
+        frameIndex = 1;
 }
 
-std::shared_ptr<Image> Renderer::getFinalImage()
+void Renderer::resetFrameIndex()
 {
-    return finalImage;
+    frameIndex = 1;
 }
 
-glm::vec4 Renderer::perPixel(glm::vec2 coord)
+Renderer::Settings &Renderer::getSettings()
 {
-    glm::vec3 rayOrigin(0.0f, 0.0f, 2.0f);
-    glm::vec3 rayDirection(coord.x, coord.y, -1.0f);
-    float radius = 0.5f;
-    // rayDirection = glm::normalize(rayDirection);
+    return settings;
+}
 
-    float a = glm::dot(rayDirection, rayDirection);
-    float b = 2.0f * glm::dot(rayOrigin, rayDirection);
-    float c = glm::dot(rayOrigin, rayOrigin) - radius * radius;
+glm::vec4 Renderer::perPixel(int x, int y)
+{
+    Ray ray;
+    ray.origin = activeCamera->getPosition();
+    ray.direction = activeCamera->getRayDirections()[x + y * finalImage->getWidth()];
 
-    float discriminant = b * b - 4 * a * c;
+    glm::vec3 color(0.0f);
+    glm::vec3 skyColor(0.53f, 0.81f, 0.92f);
 
-    if (discriminant < 0.0f)
-        return glm::vec4(0, 0, 0, 1);
+    float multiplier = 1.0f;
+    int bounces = 5;
 
-    // float t0 = (-b + glm::sqrt(discriminant)) / (2.0f * a);
-    float closetT = (-b - glm::sqrt(discriminant)) / (2.0f * a);
+    for (int i = 0; i < bounces; i++)
+    {
+        auto payload = traceRay(ray);
+        if (payload.hitDistance < 0)
+        {
+            color += skyColor * multiplier;
+            break;
+        }
 
-    // glm::vec3 h0 = rayOrigin + rayDirection * t0;
-    glm::vec3 hitPoint = rayOrigin + rayDirection * closetT;
-    glm::vec3 normal = glm::normalize(hitPoint);
+        const Sphere &closetSphere = activeScene->spheres[payload.objectIndex];
+        glm::vec3 lightDir = glm::normalize(glm::vec3(-1, -1, -1));
+        float lightIntensity = glm::max(glm::dot(payload.worldNormal, -lightDir), 0.0f); // == cos(angle)
 
-    glm::vec3 lightDir = glm::normalize(glm::vec3(-1, -1, -1));
-    float intensity = glm::max(glm::dot(normal, -lightDir), 0.1f);
+        glm::vec3 sphereColor = closetSphere.mat.albedo;
+        sphereColor *= lightIntensity;
+        color += sphereColor * multiplier;
 
-    glm::vec3 sphereColor(1, 0, 1);
-    sphereColor *= intensity;
-    return glm::vec4(sphereColor, 1);
+        multiplier *= 0.3f;
+
+        ray.origin = payload.worldPosition + payload.worldNormal * 0.0001f;
+        glm::vec3 roughnessMul = glm::vec3(glm::linearRand(glm::vec2(-0.5f), glm::vec2(0.5f)), 0);
+        glm::vec3 reflectNormal = payload.worldNormal + closetSphere.mat.roughness * roughnessMul;
+        ray.direction = glm::reflect(ray.direction, reflectNormal);
+    }
+
+    return glm::vec4(color, 1.0f);
+}
+
+Renderer::HitPayload Renderer::traceRay(const Ray &ray)
+{
+
+    int closetIndex = -1;
+    float hitDistance = std::numeric_limits<float>::max();
+
+    for (int i = 0; i < activeScene->spheres.size(); i++)
+    {
+        const Sphere &sphere = activeScene->spheres[i];
+        glm::vec3 origin = ray.origin - sphere.position;
+        float a = glm::dot(ray.direction, ray.direction);
+        float b = 2.0f * glm::dot(origin, ray.direction);
+        float c = glm::dot(origin, origin) - sphere.radius * sphere.radius;
+
+        float discriminant = b * b - 4 * a * c;
+        if (discriminant < 0.0f)
+            continue;
+
+        float closetT = (-b - glm::sqrt(discriminant)) / (2.0f * a);
+        if (closetT > 0.0f && closetT < hitDistance)
+        {
+            hitDistance = closetT;
+            closetIndex = i;
+        }
+    }
+
+    if (closetIndex < 0)
+        return miss(ray);
+
+    return closetHit(ray, hitDistance, closetIndex);
+}
+
+Renderer::HitPayload Renderer::closetHit(const Ray &ray, float hitDistance, int objectIndex)
+{
+
+    Renderer::HitPayload payload;
+    payload.hitDistance = hitDistance;
+    payload.objectIndex = objectIndex;
+
+    const Sphere &closetSphere = activeScene->spheres[objectIndex];
+
+    glm::vec3 origin = ray.origin - closetSphere.position;
+    payload.worldPosition = origin + hitDistance * ray.direction;
+    payload.worldNormal = glm::normalize(payload.worldPosition);
+
+    payload.worldPosition += closetSphere.position;
+
+    return payload;
+}
+
+Renderer::HitPayload Renderer::miss(const Ray &ray)
+{
+    Renderer::HitPayload payload;
+    payload.hitDistance = -1;
+    return payload;
 }
 
 uint32_t Renderer::convertToABGR(const glm::vec4 &color)
@@ -85,4 +200,9 @@ uint32_t Renderer::convertToABGR(const glm::vec4 &color)
     uint8_t a = color.a * 255;
 
     return (a << 24) | (b << 16) | (g << 8) | r;
+}
+
+std::shared_ptr<Image> Renderer::getFinalImage()
+{
+    return finalImage;
 }
