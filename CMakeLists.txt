@@ -10,6 +10,7 @@ add_subdirectory(libs)
 
 add_compile_definitions(GLEW_STATIC)
 
+find_package(TBB REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
@@ -36,5 +37,5 @@ target_link_libraries(
     ${GLEW_LIBRARIES} 
     ${OPENGL_LIBRARIES}
     jug
-    "tbb"
+    TBB::tbb
 )

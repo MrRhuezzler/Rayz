@@ -2,6 +2,7 @@
 #include <execution>
 #include "glm/gtc/random.hpp"
 #include "renderer.h"
+#include "jug/fileDialog.h"
 
 Renderer::Renderer()
 {
@@ -21,8 +22,8 @@ void Renderer::onResize(uint32_t width, uint32_t height)
         finalImage = std::make_shared<Image>(width, height);
     }
 
-    delete[] imageData;
-    imageData = new uint32_t[width * height];
+    delete[] imageDataToTexture;
+    imageDataToTexture = new uint32_t[width * height];
 
     delete[] accumulationData;
     accumulationData = new glm::vec4[width * height];
@@ -71,11 +72,11 @@ void Renderer::render(const Scene &scene, const Camera &camera)
                                         glm::vec4 accumulatedColor = accumulationData[x + y * finalImage->getWidth()];
                                         accumulatedColor /= (float)frameIndex;
                                         accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
-                                        imageData[x + y * finalImage->getWidth()] = convertToABGR(accumulatedColor);
+                                        imageDataToTexture[x + y * finalImage->getWidth()] = convertToABGR(accumulatedColor);
                                     });
                   });
 #endif
-    finalImage->setData(imageData);
+    finalImage->setData(imageDataToTexture);
 
     if (settings.accumulate)
     {
@@ -102,7 +103,20 @@ void Renderer::onUIRender()
     ImGui::Checkbox("Accumulate", &settings.accumulate);
     ImGui::InputInt("Max Sample frames", &settings.maxFrames);
 
+    ImGui::SeparatorText("Output");
+    if (ImGui::Button("Save"))
+    {
+        saveImage();
+    }
+
     ImGui::End();
+}
+
+void Renderer::saveImage()
+{
+    std::string filePath = FileDialog::saveFile("PNG (*.png)\0*.png\0");
+    if (!filePath.empty())
+        Image::saveData(filePath.c_str(), finalImage->getWidth(), finalImage->getHeight(), 4, imageDataToTexture, finalImage->getWidth() * sizeof(uint32_t));
 }
 
 Renderer::Settings &Renderer::getSettings()

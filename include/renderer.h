@@ -32,6 +32,7 @@ public:
     void resetFrameIndex();
 
     void onUIRender();
+    void saveImage();
 
     Settings &getSettings();
     Status getStatus();
@@ -45,7 +46,7 @@ private:
     Settings settings;
 
     std::shared_ptr<Image> finalImage;
-    uint32_t *imageData;
+    uint32_t *imageDataToTexture;
     glm::vec4 *accumulationData = nullptr;
 
     int frameIndex = 1;
