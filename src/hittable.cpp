@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "glm/gtc/constants.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 #include "imgui.h"
 #include "hittable.h"
@@ -11,8 +12,13 @@ inline void HitPayload::setFaceNormal(const Ray &ray, const glm::vec3 &outwardNo
     worldNormal = frontFace ? outwardNormal : -1.0f * outwardNormal;
 }
 
-Sphere::Sphere(glm::vec3 center, float radius, std::shared_ptr<Material> mat)
-    : center(center), radius(radius), mat(mat)
+Hittable::Hittable(const std::string &name)
+    : name(name)
+{
+}
+
+Sphere::Sphere(const std::string &name, glm::vec3 center, float radius, std::shared_ptr<Material> mat)
+    : center(center), radius(radius), mat(mat), Hittable(name)
 {
 }
 
@@ -58,8 +64,26 @@ bool Sphere::boundingBox(AABB &outputBox) const
     return true;
 }
 
-Plane::Plane(glm::vec3 position, glm::vec3 normal, std::shared_ptr<Material> mat)
-    : position(position), normal(-normal), mat(mat)
+bool Sphere::renderUI()
+{
+    bool moved = false;
+    {
+        ImGui::SeparatorText("Props");
+        if (ImGui::DragFloat3("Center", glm::value_ptr(center), 0.01f))
+            moved = true;
+        if (ImGui::DragFloat("Radius", &radius, 0.01f))
+            moved = true;
+    }
+    {
+        ImGui::SeparatorText("Mat");
+        if (mat->renderUI())
+            moved = true;
+    }
+    return moved;
+}
+
+Plane::Plane(const std::string &name, glm::vec3 position, glm::vec3 normal, std::shared_ptr<Material> mat)
+    : position(position), normal(-normal), mat(mat), Hittable(name)
 {
 }
 
@@ -98,8 +122,54 @@ bool Plane::boundingBox(AABB &outputBox) const
     return false;
 }
 
-Triangle::Triangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, std::shared_ptr<Material> mat)
-    : v0(v0), v1(v1), v2(v2), mat(mat)
+glm::vec3 Plane::directionNormals[6] = {
+    glm::vec3(-1.0f, 0.0f, 0.0f),
+    glm::vec3(1.0f, 0.0f, 0.0f),
+    glm::vec3(0.0f, 1.0f, 0.0f),
+    glm::vec3(0.0f, -1.0f, 0.0f),
+    glm::vec3(0.0f, 0.0f, -1.0f),
+    glm::vec3(0.0f, 0.0f, 1.0f),
+};
+
+bool Plane::renderUI()
+{
+    const char *availableNormals[] = {"LEFT", "RIGHT", "UP", "DOWN", "FRONT", "BACK"};
+
+    bool moved = false;
+    {
+        ImGui::SeparatorText("Props");
+        if (ImGui::DragFloat3("Position", glm::value_ptr(position), 0.001f))
+            moved = true;
+
+        if (ImGui::Button("Normal"))
+        {
+            ImGui::OpenPopup("normal_change");
+        }
+
+        if (ImGui::BeginPopup("normal_change"))
+        {
+            ImGui::SeparatorText("Directions");
+            for (int i = 0; i < IM_ARRAYSIZE(availableNormals); i++)
+                if (ImGui::Selectable(availableNormals[i]))
+                {
+                    normal = directionNormals[i];
+                    moved = true;
+                }
+            ImGui::EndPopup();
+        }
+    }
+
+    {
+        ImGui::SeparatorText("Mat");
+        if (mat->renderUI())
+            moved = true;
+    }
+
+    return moved;
+}
+
+Triangle::Triangle(const std::string &name, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, std::shared_ptr<Material> mat)
+    : v0(v0), v1(v1), v2(v2), mat(mat), Hittable(name)
 {
 }
 #define MT
@@ -195,11 +265,32 @@ bool Triangle::boundingBox(AABB &outputBox) const
     return true;
 }
 
-Scene::Scene()
+bool Triangle::renderUI()
+{
+    bool moved = false;
+    {
+        ImGui::SeparatorText("Props");
+        if (ImGui::DragFloat3("v0", glm::value_ptr(v0), 0.001f))
+            moved = true;
+    }
+
+    {
+        ImGui::SeparatorText("Mat");
+        if (mat)
+            if (mat->renderUI())
+                moved = true;
+    }
+
+    return moved;
+}
+
+Scene::Scene(const std::string &name)
+    : Hittable(name)
 {
 }
 
-Scene::Scene(std::shared_ptr<Hittable> object)
+Scene::Scene(const std::string &name, const std::shared_ptr<Hittable> &object)
+    : Hittable(name)
 {
     add(object);
 }
@@ -209,7 +300,7 @@ void Scene::clear()
     objects.clear();
 }
 
-void Scene::add(std::shared_ptr<Hittable> object)
+void Scene::add(const std::shared_ptr<Hittable> &object)
 {
     objects.push_back(object);
 }
@@ -256,4 +347,29 @@ bool Scene::boundingBox(AABB &outputBox) const
     }
 
     return true;
+}
+
+bool Scene::renderUI()
+{
+    bool moved = false;
+    ImGui::Begin(name.c_str());
+    if (ImGui::TreeNode("Objects"))
+    {
+        for (int i = 0; i < objects.size(); i++)
+        {
+            const auto &object = objects[i];
+            // ImGui::PushID(i + 1);
+            if (ImGui::TreeNode((void *)(intptr_t)i, object->name.c_str(), i))
+            {
+                if (object->renderUI())
+                    moved = true;
+                ImGui::TreePop();
+            }
+            // ImGui::PopID();
+        }
+        ImGui::TreePop();
+    }
+    ImGui::End();
+
+    return moved;
 }

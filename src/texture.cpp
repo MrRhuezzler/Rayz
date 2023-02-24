@@ -1,6 +1,9 @@
+#include "imgui.h"
 #include <iostream>
 #include "stb/stb_image.h"
+#include "glm/gtc/type_ptr.hpp"
 #include "texture.h"
+#include "jug/fileDialog.h"
 
 SolidColor::SolidColor(const glm::vec3 &color)
     : color(color)
@@ -10,6 +13,14 @@ SolidColor::SolidColor(const glm::vec3 &color)
 glm::vec3 SolidColor::value(float u, float v, const glm::vec3 &p) const
 {
     return color;
+}
+
+bool SolidColor::renderUI()
+{
+    bool moved = false;
+    if (ImGui::ColorEdit3("Albedo", glm::value_ptr(color)))
+        moved = true;
+    return moved;
 }
 
 CheckerTexture::CheckerTexture(glm::vec3 odd, glm::vec3 even)
@@ -31,6 +42,16 @@ glm::vec3 CheckerTexture::value(float u, float v, const glm::vec3 &p) const
         return even->value(u, v, p);
 }
 
+bool CheckerTexture::renderUI()
+{
+    bool moved = false;
+    if (odd->renderUI())
+        moved = true;
+    if (even->renderUI())
+        moved = true;
+    return moved;
+}
+
 ImageTexture::ImageTexture()
     : data(nullptr), width(0), height(0), stride(0)
 {
@@ -38,15 +59,18 @@ ImageTexture::ImageTexture()
 
 ImageTexture::ImageTexture(const char *fileName)
 {
-    data = stbi_load(fileName, &width, &height, &channels, channels);
+    loadData(fileName);
+}
 
+void ImageTexture::loadData(const char *fileName)
+{
+    data = stbi_load(fileName, &width, &height, &channels, channels);
     if (!data)
     {
         std::cout << "error loading texture" << std::endl;
         width = 0;
         height = 0;
     }
-
     stride = channels * width;
 }
 
@@ -76,4 +100,20 @@ glm::vec3 ImageTexture::value(float u, float v, const glm::vec3 &p) const
     auto pixel = data + i * channels + j * stride;
 
     return glm::vec3(colorScale * pixel[0], colorScale * pixel[1], colorScale * pixel[2]);
+}
+
+bool ImageTexture::renderUI()
+{
+    bool moved = false;
+    if (ImGui::Button("Load Texture"))
+    {
+        std::string filePath = Jug::FileDialog::openFile("Image Files (*.png|*.jpeg|*.jpg)\0*.png;*.jpeg;*.jpg\0PNG (*.png)\0*.png\0JPEG (*.jpeg)\0*.jpeg\0JPG (*.jpg)\0*.jpg\0");
+        if (!filePath.empty())
+        {
+            moved = true;
+            loadData(filePath.c_str());
+        }
+    }
+
+    return moved;
 }

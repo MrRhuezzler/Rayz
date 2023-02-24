@@ -4,6 +4,7 @@
 #include "bvhNode.h"
 
 BVHNode::BVHNode()
+    : Hittable("bvh")
 {
 }
 
@@ -13,6 +14,7 @@ BVHNode::BVHNode(const Scene &scene)
 }
 
 BVHNode::BVHNode(const std::vector<std::shared_ptr<Hittable>> &objects, int start, int end)
+    : Hittable("bvh")
 {
     auto objs = objects;
     int axis = glm::linearRand<int>(0, 2);

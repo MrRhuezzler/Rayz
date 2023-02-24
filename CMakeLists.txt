@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.12)
 project(rayz)
 
 set(CMAKE_CXX_STANDARD 17)
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pg")
+# set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pg")
+
+# message(${CMAKE_CXX_FLAGS_DEBUG})
 
 add_subdirectory(libs)
 
@@ -44,7 +48,15 @@ add_custom_target(
     ${CMAKE_CURRENT_BINARY_DIR}/textures
 )
 
+add_custom_target(
+    copy_jug_assests
+    COMMAND ${CMAKE_COMMAND} -E copy_directory 
+    ${CMAKE_CURRENT_LIST_DIR}/libs/jug/assests 
+    ${CMAKE_CURRENT_BINARY_DIR}/assests
+)
+
 add_dependencies(
     ${PROJECT_NAME}
     copy_textures
+    copy_jug_assests
 )
