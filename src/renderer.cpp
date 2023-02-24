@@ -45,7 +45,7 @@ void Renderer::render(const Scene &scene, const Camera &camera)
     if (frameIndex == 1)
         memset(accumulationData, 0, finalImage->getWidth() * finalImage->getHeight() * sizeof(glm::vec4));
 
-// #define MT
+#define MT
 #ifndef MT
     for (int y = 0; y < finalImage->getHeight(); y++)
     {
@@ -142,31 +142,33 @@ glm::vec4 Renderer::perPixel(int x, int y)
 
     float multiplier = 1.0f;
 
-    glm::vec3 skyColor(0.5f, 0.7f, 1.0f);
-    glm::vec3 black(0.0f);
-    glm::vec3 color(1.0f);
+    // glm::vec3 skyColor(0.5f, 0.7f, 1.0f);
+    glm::vec3 skyColor(0.0f);
+    // glm::vec3 black(0.0f);
+    glm::vec3 color(0.0f);
+    glm::vec3 attenuation(1.0f);
 
     int bounces = 10;
     for (int i = 0; i < bounces; i++)
     {
         if (activeScene->hit(ray, 0.001f, std::numeric_limits<float>::max(), payload))
         {
-            glm::vec3 attenuation;
+            glm::vec3 emission = payload.mat->emitted(ray, payload, payload.u, payload.v, payload.worldPosition);
             if (payload.mat->scatter(ray, payload, attenuation, scattered))
             {
-                color *= attenuation;
+                color += (attenuation * emission);
+                ray.origin = scattered.origin;
+                ray.direction = scattered.direction;
             }
             else
             {
-                color *= black;
+                color += (attenuation * emission);
+                break;
             }
-
-            ray.origin = scattered.origin;
-            ray.direction = scattered.direction;
         }
         else
         {
-            color *= skyColor;
+            color += (attenuation * skyColor);
             break;
         }
     }

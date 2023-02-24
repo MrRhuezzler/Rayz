@@ -1,3 +1,5 @@
 # cmake-build-tools
 build/
 .vscode/
+out/
+.vs/

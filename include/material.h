@@ -5,6 +5,8 @@
 #include "glm/glm.hpp"
 #include "ray.h"
 
+#include "texture.h"
+
 class Material;
 
 struct HitPayload
@@ -13,6 +15,7 @@ struct HitPayload
     glm::vec3 worldNormal;
     std::shared_ptr<Material> mat;
     float hitDistance;
+    float u, v;
     bool frontFace;
 
     inline void setFaceNormal(const Ray &r, const glm::vec3 &outward_normal);
@@ -21,6 +24,11 @@ struct HitPayload
 class Material
 {
 public:
+    virtual glm::vec3 emitted(const Ray &ray, const HitPayload &payload, double u, double v, const glm::vec3 &p) const
+    {
+        return glm::vec3(0, 0, 0);
+    }
+
     virtual bool scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &attenuation, Ray &scattered) const = 0;
 };
 
@@ -28,10 +36,11 @@ class Lambertian : public Material
 {
 public:
     Lambertian(const glm::vec3 &albedo);
+    Lambertian(const std::shared_ptr<Texture> &texture);
     virtual bool scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &attenuation, Ray &scattered) const override;
 
 public:
-    glm::vec3 albedo;
+    std::shared_ptr<Texture> texture;
 };
 
 class Metal : public Material
@@ -58,4 +67,16 @@ private:
 public:
     glm::vec3 albedo;
     double ir;
+};
+
+class DiffuseLight : public Material
+{
+public:
+    std::shared_ptr<Texture> emit;
+
+    DiffuseLight(glm::vec3 albedo);
+    DiffuseLight(const std::shared_ptr<Texture> &texture);
+
+    virtual bool scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &attenuation, Ray &scattered) const override;
+    virtual glm::vec3 emitted(const Ray &ray, const HitPayload &payload, double u, double v, const glm::vec3 &p) const override;
 };

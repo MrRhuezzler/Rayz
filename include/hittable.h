@@ -6,12 +6,14 @@
 #include "glm/glm.hpp"
 
 #include "ray.h"
+#include "boundingBox.h"
 #include "material.h"
 
 class Hittable
 {
 public:
     virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const = 0;
+    virtual bool boundingBox(AABB &outputox) const = 0;
 };
 
 class Sphere : public Hittable
@@ -24,6 +26,7 @@ public:
     Sphere(glm::vec3 center, float radius, std::shared_ptr<Material> mat);
 
     virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
+    virtual bool boundingBox(AABB &outputox) const override;
 };
 
 class Plane : public Hittable
@@ -36,6 +39,7 @@ public:
     Plane(glm::vec3 position, glm::vec3 normal, std::shared_ptr<Material> mat);
 
     virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
+    virtual bool boundingBox(AABB &outputox) const override;
 };
 
 class Triangle : public Hittable
@@ -47,6 +51,7 @@ public:
     Triangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, std::shared_ptr<Material> mat);
 
     virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
+    virtual bool boundingBox(AABB &outputox) const override;
 };
 
 class Scene : public Hittable
@@ -58,8 +63,10 @@ public:
     void clear();
     void add(std::shared_ptr<Hittable> object);
 
-    virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
+    const std::vector<std::shared_ptr<Hittable>> &getObjects() const;
 
-private:
+    virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
+    virtual bool boundingBox(AABB &outputox) const override;
+
     std::vector<std::shared_ptr<Hittable>> objects;
 };

@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include "glm/gtc/constants.hpp"
+
 #include "imgui.h"
 #include "hittable.h"
 
@@ -37,9 +39,22 @@ bool Sphere::hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) co
     payload.hitDistance = t;
     payload.worldPosition = ray.origin + t * ray.direction;
     glm::vec3 normal = (payload.worldPosition - center) / radius;
+    // glm::vec3 normal = glm::normalize(payload.worldPosition - center);
     payload.setFaceNormal(ray, normal);
     payload.mat = mat;
 
+    payload.u = glm::atan(normal.x, normal.z) / (2.0f * glm::pi<float>()) + 0.5f;
+    payload.v = normal.y * 0.5 + 0.5;
+
+    // payload.u = (atan2(normal.x, -normal.z) / glm::pi<float>() + 1.0f) / 2.0f;
+    // payload.v = asin(normal.y) / glm::pi<float>() + .5;
+
+    return true;
+}
+
+bool Sphere::boundingBox(AABB &outputBox) const
+{
+    outputBox = AABB(center - glm::vec3(radius), center + glm::vec3(radius));
     return true;
 }
 
@@ -59,12 +74,27 @@ bool Plane::hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) con
         if (t < tMin || tMax < t)
             return false;
 
+        glm::vec3 a = glm::cross(normal, glm::vec3(1, 0, 0));
+        glm::vec3 b = glm::cross(normal, glm::vec3(0, 1, 0));
+        glm::vec3 max_ab = glm::dot(a, a) < glm::dot(b, b) ? b : a;
+        glm::vec3 c = glm::cross(normal, glm::vec3(0, 0, 1));
+
+        glm::vec3 uVec = glm::normalize(glm::dot(max_ab, max_ab) < glm::dot(c, c) ? c : max_ab);
+        glm::vec3 vVec = glm::cross(normal, uVec);
+
         payload.worldPosition = ray.origin + t * ray.direction;
         payload.hitDistance = t;
         payload.setFaceNormal(ray, normal);
         payload.mat = mat;
+        payload.u = glm::dot(payload.worldPosition - position, uVec);
+        payload.v = glm::dot(payload.worldPosition - position, vVec);
         return t >= 0;
     }
+    return false;
+}
+
+bool Plane::boundingBox(AABB &outputBox) const
+{
     return false;
 }
 
@@ -152,10 +182,18 @@ bool Triangle::hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) 
     payload.hitDistance = t;
     payload.mat = mat;
     payload.setFaceNormal(ray, normal);
+    payload.u = u;
+    payload.v = v;
 
     return true;
 }
 #endif
+
+bool Triangle::boundingBox(AABB &outputBox) const
+{
+    outputBox = AABB(glm::min(v0, glm::min(v1, v2)), glm::max(v0, glm::max(v1, v2)));
+    return true;
+}
 
 Scene::Scene()
 {
@@ -176,6 +214,11 @@ void Scene::add(std::shared_ptr<Hittable> object)
     objects.push_back(object);
 }
 
+const std::vector<std::shared_ptr<Hittable>> &Scene::getObjects() const
+{
+    return objects;
+}
+
 bool Scene::hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const
 {
     HitPayload tempPayload;
@@ -194,4 +237,23 @@ bool Scene::hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) con
     }
 
     return hitAnything;
+}
+
+bool Scene::boundingBox(AABB &outputBox) const
+{
+    if (objects.empty())
+        return false;
+
+    AABB temp;
+    bool firstBox = true;
+
+    for (const auto &object : objects)
+    {
+        if (!object->boundingBox(temp))
+            return false;
+        outputBox = firstBox ? temp : AABB::surroundingBox(outputBox, temp);
+        firstBox = false;
+    }
+
+    return true;
 }

@@ -2,7 +2,12 @@
 #include "material.h"
 
 Lambertian::Lambertian(const glm::vec3 &albedo)
-    : albedo(albedo)
+    : texture(std::make_shared<SolidColor>(albedo))
+{
+}
+
+Lambertian::Lambertian(const std::shared_ptr<Texture> &texture)
+    : texture(texture)
 {
 }
 
@@ -11,7 +16,7 @@ bool Lambertian::scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &a
     glm::vec3 scatterDirection = payload.worldNormal + glm::normalize(glm::linearRand(glm::vec3(-1.0f), glm::vec3(1.0f)));
     scattered.origin = payload.worldPosition;
     scattered.direction = scatterDirection;
-    attenuation = albedo;
+    attenuation = texture->value(payload.u, payload.v, payload.worldPosition);
     return true;
 }
 
@@ -67,4 +72,27 @@ float Dieletric::reflectance(float cosine, float ref_idx)
     auto r0 = (1 - ref_idx) / (1 + ref_idx);
     r0 = r0 * r0;
     return r0 + (1 - r0) * glm::pow((1 - cosine), 5.0f);
+}
+
+DiffuseLight::DiffuseLight(glm::vec3 albedo)
+    : DiffuseLight(std::make_shared<SolidColor>(albedo))
+{
+}
+
+DiffuseLight::DiffuseLight(const std::shared_ptr<Texture> &texture)
+    : emit(texture)
+{
+}
+
+bool DiffuseLight::scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &attenuation, Ray &scattered) const
+{
+    return false;
+}
+
+glm::vec3 DiffuseLight::emitted(const Ray &ray, const HitPayload &payload, double u, double v, const glm::vec3 &p) const
+{
+    if (payload.frontFace)
+        return emit->value(u, v, p);
+    else
+        return glm::vec3(0.0f);
 }

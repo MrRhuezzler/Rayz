@@ -3,9 +3,6 @@ project(rayz)
 
 set(CMAKE_CXX_STANDARD 17)
 
-option(BUILD_STATIC_LIBS "Build Static Library" ON)
-option(BUILD_SHARED_LIBS "Build Shared Library" OFF)
-
 add_subdirectory(libs)
 
 add_compile_definitions(GLEW_STATIC)
@@ -38,4 +35,16 @@ target_link_libraries(
     ${OPENGL_LIBRARIES}
     jug
     TBB::tbb
+)
+
+add_custom_target(
+    copy_textures
+    COMMAND ${CMAKE_COMMAND} -E copy_directory 
+    ${CMAKE_CURRENT_LIST_DIR}/textures 
+    ${CMAKE_CURRENT_BINARY_DIR}/textures
+)
+
+add_dependencies(
+    ${PROJECT_NAME}
+    copy_textures
 )
