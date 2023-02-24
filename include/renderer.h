@@ -19,6 +19,7 @@ public:
     {
         bool accumulate = true;
         int maxFrames = 1000;
+        glm::vec3 backgroundColor = glm::vec3(0.5f, 0.7f, 1.0f);
     };
 
     struct Status
@@ -31,7 +32,7 @@ public:
     void render(const Scene &scene, const Camera &camera);
     void resetFrameIndex();
 
-    void onUIRender();
+    void renderUI();
     void saveImage();
 
     Settings &getSettings();

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -12,8 +13,15 @@
 class Hittable
 {
 public:
+    const std::string name;
+    Hittable(const std::string &name);
+
     virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const = 0;
     virtual bool boundingBox(AABB &outputox) const = 0;
+    virtual bool renderUI()
+    {
+        return false;
+    };
 };
 
 class Sphere : public Hittable
@@ -23,23 +31,28 @@ public:
     float radius;
     std::shared_ptr<Material> mat;
 
-    Sphere(glm::vec3 center, float radius, std::shared_ptr<Material> mat);
+    Sphere(const std::string &name, glm::vec3 center, float radius, std::shared_ptr<Material> mat);
 
     virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
     virtual bool boundingBox(AABB &outputox) const override;
+    virtual bool renderUI() override;
 };
 
 class Plane : public Hittable
 {
+private:
+    static glm::vec3 directionNormals[6];
+
 public:
     glm::vec3 position;
     glm::vec3 normal;
     std::shared_ptr<Material> mat;
 
-    Plane(glm::vec3 position, glm::vec3 normal, std::shared_ptr<Material> mat);
+    Plane(const std::string &name, glm::vec3 position, glm::vec3 normal, std::shared_ptr<Material> mat);
 
     virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
     virtual bool boundingBox(AABB &outputox) const override;
+    virtual bool renderUI() override;
 };
 
 class Triangle : public Hittable
@@ -48,25 +61,39 @@ public:
     glm::vec3 v0, v1, v2;
     std::shared_ptr<Material> mat;
 
-    Triangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, std::shared_ptr<Material> mat);
+    Triangle(const std::string &name, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, std::shared_ptr<Material> mat);
 
     virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
     virtual bool boundingBox(AABB &outputox) const override;
+    virtual bool renderUI() override;
 };
 
 class Scene : public Hittable
 {
 public:
-    Scene();
-    Scene(std::shared_ptr<Hittable> object);
+    Scene(const std::string &name);
+    Scene(const std::string &name, const std::shared_ptr<Hittable> &object);
 
     void clear();
-    void add(std::shared_ptr<Hittable> object);
+    void add(const std::shared_ptr<Hittable> &object);
 
     const std::vector<std::shared_ptr<Hittable>> &getObjects() const;
 
     virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
     virtual bool boundingBox(AABB &outputox) const override;
+    virtual bool renderUI() override;
 
     std::vector<std::shared_ptr<Hittable>> objects;
 };
+
+// class Scene
+// {
+// public:
+//     std::shared_ptr<HittableList> hittableList;
+
+//     Scene();
+
+//     bool renderUI();
+//     void add(const std::shared_ptr<Hittable> &object);
+//     const std::vector<std::shared_ptr<Hittable>> &getObjects() const;
+// };

@@ -1,3 +1,4 @@
+#include "imgui.h"
 #include "glm/gtc/random.hpp"
 #include "material.h"
 
@@ -20,8 +21,23 @@ bool Lambertian::scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &a
     return true;
 }
 
+bool Lambertian::renderUI()
+{
+    bool moved = false;
+
+    if (texture->renderUI())
+        moved = true;
+
+    return moved;
+}
+
 Metal::Metal(const glm::vec3 &albedo, float fuzz)
-    : albedo(albedo), fuzz(fuzz)
+    : Metal(std::make_shared<SolidColor>(albedo), fuzz)
+{
+}
+
+Metal::Metal(const std::shared_ptr<Texture> &texture, float fuzz)
+    : texture(texture), fuzz(fuzz)
 {
 }
 
@@ -30,18 +46,33 @@ bool Metal::scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &attenu
     glm::vec3 scatteredDirection = glm::reflect(ray.direction, payload.worldNormal);
     scattered.origin = payload.worldPosition;
     scattered.direction = scatteredDirection + fuzz * glm::normalize(glm::linearRand(glm::vec3(-1.0f), glm::vec3(1.0f)));
-    attenuation = albedo;
+    attenuation = texture->value(payload.u, payload.v, payload.worldPosition);
     return dot(scatteredDirection, payload.worldNormal) > 0;
 }
 
-Dieletric::Dieletric(const glm::vec3 &albedo, double index_of_refraction)
-    : ir(index_of_refraction), albedo(albedo)
+bool Metal::renderUI()
+{
+    bool moved = false;
+    if (ImGui::DragFloat("Fuzz", &fuzz, 0.001f))
+        moved = true;
+    if (texture->renderUI())
+        moved = true;
+    return moved;
+}
+
+Dieletric::Dieletric(const glm::vec3 &albedo, float index_of_refraction)
+    : Dieletric(std::make_shared<SolidColor>(albedo), index_of_refraction)
+{
+}
+
+Dieletric::Dieletric(const std::shared_ptr<Texture> &texture, float index_of_refraction)
+    : texture(texture), ir(index_of_refraction)
 {
 }
 
 bool Dieletric::scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &attenuation, Ray &scattered) const
 {
-    attenuation = albedo;
+    attenuation = texture->value(payload.u, payload.v, payload.worldPosition);
     float ratio = payload.frontFace ? (1.0 / ir) : ir;
 
     glm::vec3 normalized = glm::normalize(ray.direction);
@@ -57,6 +88,16 @@ bool Dieletric::scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &at
 
     scattered.origin = payload.worldPosition;
     return true;
+}
+
+bool Dieletric::renderUI()
+{
+    bool moved = false;
+    if (ImGui::DragFloat("Index of Refraction", &ir, 0.001f))
+        moved = true;
+    if (texture->renderUI())
+        moved = true;
+    return moved;
 }
 
 glm::vec3 Dieletric::refract(const glm::vec3 &uv, const glm::vec3 &n, float etai_over_etat)
@@ -80,7 +121,7 @@ DiffuseLight::DiffuseLight(glm::vec3 albedo)
 }
 
 DiffuseLight::DiffuseLight(const std::shared_ptr<Texture> &texture)
-    : emit(texture)
+    : texture(texture)
 {
 }
 
@@ -92,7 +133,15 @@ bool DiffuseLight::scatter(const Ray &ray, const HitPayload &payload, glm::vec3 
 glm::vec3 DiffuseLight::emitted(const Ray &ray, const HitPayload &payload, double u, double v, const glm::vec3 &p) const
 {
     if (payload.frontFace)
-        return emit->value(u, v, p);
+        return texture->value(u, v, p);
     else
         return glm::vec3(0.0f);
+}
+
+bool DiffuseLight::renderUI()
+{
+    bool moved = false;
+    if (texture->renderUI())
+        moved = true;
+    return moved;
 }

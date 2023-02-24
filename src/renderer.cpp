@@ -1,6 +1,7 @@
 #include "imgui.h"
 #include <execution>
 #include "glm/gtc/random.hpp"
+#include "glm/gtc/type_ptr.hpp"
 #include "renderer.h"
 #include "jug/fileDialog.h"
 
@@ -35,6 +36,8 @@ void Renderer::onResize(uint32_t width, uint32_t height)
     horizontalIterator.resize(width);
     for (int i = 0; i < width; i++)
         horizontalIterator[i] = i;
+    
+    resetFrameIndex();
 }
 
 void Renderer::render(const Scene &scene, const Camera &camera)
@@ -68,14 +71,16 @@ void Renderer::render(const Scene &scene, const Camera &camera)
                       std::for_each(std::execution::par, horizontalIterator.begin(), horizontalIterator.end(),
                                     [this, y](int x)
                                     {
-                                        auto color = perPixel(x, y);
                                         if (frameIndex < settings.maxFrames)
+                                        {
+                                            auto color = perPixel(x, y);
                                             accumulationData[x + y * finalImage->getWidth()] += color;
 
-                                        glm::vec4 accumulatedColor = accumulationData[x + y * finalImage->getWidth()];
-                                        accumulatedColor /= (float)frameIndex;
-                                        accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
-                                        imageDataToTexture[x + y * finalImage->getWidth()] = convertToABGR(accumulatedColor);
+                                            glm::vec4 accumulatedColor = accumulationData[x + y * finalImage->getWidth()];
+                                            accumulatedColor /= (float)frameIndex;
+                                            accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
+                                            imageDataToTexture[x + y * finalImage->getWidth()] = convertToABGR(accumulatedColor);
+                                        }
                                     });
                   });
 #endif
@@ -95,7 +100,7 @@ void Renderer::resetFrameIndex()
     frameIndex = 1;
 }
 
-void Renderer::onUIRender()
+void Renderer::renderUI()
 {
     ImGui::Begin("Renderer");
 
@@ -105,6 +110,10 @@ void Renderer::onUIRender()
     ImGui::SeparatorText("Settings");
     ImGui::Checkbox("Accumulate", &settings.accumulate);
     ImGui::InputInt("Max Sample frames", &settings.maxFrames);
+    if (ImGui::ColorEdit3("Background Color", glm::value_ptr(settings.backgroundColor)))
+    {
+        resetFrameIndex();
+    }
 
     ImGui::SeparatorText("Output");
     if (ImGui::Button("Save"))
@@ -142,9 +151,6 @@ glm::vec4 Renderer::perPixel(int x, int y)
 
     float multiplier = 1.0f;
 
-    // glm::vec3 skyColor(0.5f, 0.7f, 1.0f);
-    glm::vec3 skyColor(0.0f);
-    // glm::vec3 black(0.0f);
     glm::vec3 color(0.0f);
     glm::vec3 attenuation(1.0f);
 
@@ -168,42 +174,13 @@ glm::vec4 Renderer::perPixel(int x, int y)
         }
         else
         {
-            color += (attenuation * skyColor);
+            color += (attenuation * settings.backgroundColor);
             break;
         }
     }
 
     return glm::vec4(color, 1.0f);
 }
-
-// HitPayload Renderer::traceRay(const Ray &ray)
-// {
-// }
-
-// HitPayload Renderer::closetHit(const Ray &ray, float hitDistance, int objectIndex)
-// {
-
-//     HitPayload payload;
-//     payload.hitDistance = hitDistance;
-//     payload.objectIndex = objectIndex;
-
-//     const Sphere &closetSphere = activeScene->spheres[objectIndex];
-
-//     glm::vec3 origin = ray.origin - closetSphere.position;
-//     payload.worldPosition = origin + hitDistance * ray.direction;
-//     payload.worldNormal = glm::normalize(payload.worldPosition);
-
-//     payload.worldPosition += closetSphere.position;
-
-//     return payload;
-// }
-
-// HitPayload Renderer::miss(const Ray &ray)
-// {
-//     HitPayload payload;
-//     payload.hitDistance = -1;
-//     return payload;
-// }
 
 uint32_t Renderer::convertToABGR(const glm::vec4 &color)
 {
