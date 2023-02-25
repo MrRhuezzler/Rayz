@@ -31,28 +31,36 @@ public:
     float radius;
     std::shared_ptr<Material> mat;
 
+    Sphere(const std::string &name);
     Sphere(const std::string &name, glm::vec3 center, float radius, std::shared_ptr<Material> mat);
 
     virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
     virtual bool boundingBox(AABB &outputox) const override;
     virtual bool renderUI() override;
+
+    static std::shared_ptr<Hittable> CreateSphere(const std::string &name);
 };
 
 class Plane : public Hittable
 {
 private:
     static glm::vec3 directionNormals[6];
+    static const char *availableNormals[6];
 
 public:
     glm::vec3 position;
     glm::vec3 normal;
     std::shared_ptr<Material> mat;
+    int normalKind;
 
+    Plane(const std::string &name);
     Plane(const std::string &name, glm::vec3 position, glm::vec3 normal, std::shared_ptr<Material> mat);
 
     virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
     virtual bool boundingBox(AABB &outputox) const override;
     virtual bool renderUI() override;
+
+    // static std::shared_ptr<Hittable> CreatePlane(const std::string &name);
 };
 
 class Triangle : public Hittable
@@ -66,10 +74,14 @@ public:
     virtual bool hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const override;
     virtual bool boundingBox(AABB &outputox) const override;
     virtual bool renderUI() override;
+
+    // static std::shared_ptr<Hittable> CreateTriangle(const std::string &name);
 };
 
 class Scene : public Hittable
 {
+private:
+    // static std:
 public:
     Scene(const std::string &name);
     Scene(const std::string &name, const std::shared_ptr<Hittable> &object);

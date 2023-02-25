@@ -53,8 +53,12 @@ bool Metal::scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &attenu
 bool Metal::renderUI()
 {
     bool moved = false;
-    if (ImGui::DragFloat("Fuzz", &fuzz, 0.001f))
+    if (ImGui::DragFloat("###", &fuzz, 0.001f))
         moved = true;
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("Fuzz");
+    }
     if (texture->renderUI())
         moved = true;
     return moved;
@@ -93,8 +97,12 @@ bool Dieletric::scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &at
 bool Dieletric::renderUI()
 {
     bool moved = false;
-    if (ImGui::DragFloat("Index of Refraction", &ir, 0.001f))
+    if (ImGui::DragFloat("###", &ir, 0.001f))
         moved = true;
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("Index of Refraction");
+    }
     if (texture->renderUI())
         moved = true;
     return moved;

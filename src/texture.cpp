@@ -18,8 +18,12 @@ glm::vec3 SolidColor::value(float u, float v, const glm::vec3 &p) const
 bool SolidColor::renderUI()
 {
     bool moved = false;
-    if (ImGui::ColorEdit3("Albedo", glm::value_ptr(color)))
+    if (ImGui::ColorEdit3("###", glm::value_ptr(color)))
         moved = true;
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("Albedo");
+    }
     return moved;
 }
 
@@ -53,16 +57,17 @@ bool CheckerTexture::renderUI()
 }
 
 ImageTexture::ImageTexture()
-    : data(nullptr), width(0), height(0), stride(0)
+    : data(nullptr), width(0), height(0), stride(0), fileName("textures/default.jpeg")
 {
 }
 
 ImageTexture::ImageTexture(const char *fileName)
+    : fileName(fileName)
 {
     loadData(fileName);
 }
 
-void ImageTexture::loadData(const char *fileName)
+bool ImageTexture::loadData(const char *fileName)
 {
     data = stbi_load(fileName, &width, &height, &channels, channels);
     if (!data)
@@ -72,6 +77,8 @@ void ImageTexture::loadData(const char *fileName)
         height = 0;
     }
     stride = channels * width;
+    this->fileName = fileName;
+    return width != 0;
 }
 
 ImageTexture::~ImageTexture()
@@ -105,14 +112,19 @@ glm::vec3 ImageTexture::value(float u, float v, const glm::vec3 &p) const
 bool ImageTexture::renderUI()
 {
     bool moved = false;
-    if (ImGui::Button("Load Texture"))
+    float x = ImGui::GetContentRegionAvail().x;
+    if (ImGui::Button("Load Texture", ImVec2(x, 0.0f)))
     {
         std::string filePath = Jug::FileDialog::openFile("Image Files (*.png|*.jpeg|*.jpg)\0*.png;*.jpeg;*.jpg\0PNG (*.png)\0*.png\0JPEG (*.jpeg)\0*.jpeg\0JPG (*.jpg)\0*.jpg\0");
         if (!filePath.empty())
         {
-            moved = true;
             loadData(filePath.c_str());
+            moved = true;
         }
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("Current: %s", fileName.c_str());
     }
 
     return moved;

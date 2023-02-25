@@ -17,6 +17,11 @@ Hittable::Hittable(const std::string &name)
 {
 }
 
+Sphere::Sphere(const std::string &name)
+    : Hittable(name), center(0.0f), radius(0.5f), mat(std::make_shared<Lambertian>(glm::vec3(1.0f, 0.0f, 0.0f)))
+{
+}
+
 Sphere::Sphere(const std::string &name, glm::vec3 center, float radius, std::shared_ptr<Material> mat)
     : center(center), radius(radius), mat(mat), Hittable(name)
 {
@@ -69,10 +74,18 @@ bool Sphere::renderUI()
     bool moved = false;
     {
         ImGui::SeparatorText("Props");
-        if (ImGui::DragFloat3("Center", glm::value_ptr(center), 0.01f))
+        if (ImGui::DragFloat3("###", glm::value_ptr(center), 0.01f))
             moved = true;
-        if (ImGui::DragFloat("Radius", &radius, 0.01f))
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("Center");
+        }
+        if (ImGui::DragFloat("###", &radius, 0.01f))
             moved = true;
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("Radius");
+        }
     }
     {
         ImGui::SeparatorText("Mat");
@@ -82,9 +95,27 @@ bool Sphere::renderUI()
     return moved;
 }
 
+std::shared_ptr<Hittable> Sphere::CreateSphere(const std::string &name)
+{
+    return std::make_shared<Sphere>(name);
+}
+
+// Plane::Plane(const std::string &name)
+// {
+    
+// }
+
 Plane::Plane(const std::string &name, glm::vec3 position, glm::vec3 normal, std::shared_ptr<Material> mat)
     : position(position), normal(-normal), mat(mat), Hittable(name)
 {
+    for (int i = 0; i < 6; i++)
+    {
+        float val = glm::dot(normal, directionNormals[i]);
+        if (val > 0.0f)
+        {
+            normalKind = i;
+        }
+    }
 }
 
 bool Plane::hit(const Ray &ray, float tMin, float tMax, HitPayload &payload) const
@@ -131,19 +162,29 @@ glm::vec3 Plane::directionNormals[6] = {
     glm::vec3(0.0f, 0.0f, 1.0f),
 };
 
+const char *Plane::availableNormals[6] = {"LEFT", "RIGHT", "UP", "DOWN", "FRONT", "BACK"};
+
 bool Plane::renderUI()
 {
-    const char *availableNormals[] = {"LEFT", "RIGHT", "UP", "DOWN", "FRONT", "BACK"};
-
     bool moved = false;
+
     {
         ImGui::SeparatorText("Props");
-        if (ImGui::DragFloat3("Position", glm::value_ptr(position), 0.001f))
+        if (ImGui::DragFloat3("###", glm::value_ptr(position), 0.001f))
             moved = true;
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("Position");
+        }
 
-        if (ImGui::Button("Normal"))
+        float x = ImGui::GetContentRegionAvail().x;
+        if (ImGui::Button("Normal", ImVec2(x, 0.0f)))
         {
             ImGui::OpenPopup("normal_change");
+        }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("%s", availableNormals[normalKind]);
         }
 
         if (ImGui::BeginPopup("normal_change"))
@@ -153,6 +194,7 @@ bool Plane::renderUI()
                 if (ImGui::Selectable(availableNormals[i]))
                 {
                     normal = directionNormals[i];
+                    normalKind = i;
                     moved = true;
                 }
             ImGui::EndPopup();
@@ -167,6 +209,11 @@ bool Plane::renderUI()
 
     return moved;
 }
+
+// std::shared_ptr<Hittable> Plane::CreatePlane(const std::string &name)
+// {
+    
+// }
 
 Triangle::Triangle(const std::string &name, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, std::shared_ptr<Material> mat)
     : v0(v0), v1(v1), v2(v2), mat(mat), Hittable(name)
@@ -270,8 +317,24 @@ bool Triangle::renderUI()
     bool moved = false;
     {
         ImGui::SeparatorText("Props");
-        if (ImGui::DragFloat3("v0", glm::value_ptr(v0), 0.001f))
+        if (ImGui::DragFloat3("###", glm::value_ptr(v0), 0.001f))
             moved = true;
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("v0");
+        }
+        if (ImGui::DragFloat3("###", glm::value_ptr(v1), 0.001f))
+            moved = true;
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("v1");
+        }
+        if (ImGui::DragFloat3("###", glm::value_ptr(v2), 0.001f))
+            moved = true;
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("v2");
+        }
     }
 
     {
@@ -283,6 +346,11 @@ bool Triangle::renderUI()
 
     return moved;
 }
+
+// std::shared_ptr<Hittable> Triangle::CreateTriangle(const std::string &name)
+// {
+    
+// }
 
 Scene::Scene(const std::string &name)
     : Hittable(name)
@@ -353,7 +421,24 @@ bool Scene::renderUI()
 {
     bool moved = false;
     ImGui::Begin(name.c_str());
-    if (ImGui::TreeNode("Objects"))
+
+    bool treeopen = ImGui::TreeNodeEx("Objects", ImGuiTreeNodeFlags_AllowItemOverlap);
+    ImGui::SameLine();
+
+    if (ImGui::Button("+"))
+        ImGui::OpenPopup("Object List");
+
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Add Object");
+
+    if (ImGui::BeginPopup("Object List"))
+    {
+        ImGui::MenuItem("element 1");
+        ImGui::MenuItem("element 2");
+        ImGui::EndPopup();
+    }
+
+    if (treeopen)
     {
         for (int i = 0; i < objects.size(); i++)
         {
@@ -361,8 +446,11 @@ bool Scene::renderUI()
             // ImGui::PushID(i + 1);
             if (ImGui::TreeNode((void *)(intptr_t)i, object->name.c_str(), i))
             {
+                float x = ImGui::GetContentRegionAvail().x;
+                ImGui::PushItemWidth(x);
                 if (object->renderUI())
                     moved = true;
+                ImGui::PopItemWidth();
                 ImGui::TreePop();
             }
             // ImGui::PopID();
