@@ -25,15 +25,20 @@ public:
     {
         auto earthImage = std::make_shared<ImageTexture>("textures/earthmap.jpg");
         auto earth = std::make_shared<Lambertian>(earthImage);
-        auto colored1 = std::make_shared<Lambertian>(glm::vec3(0.8f, 0.2f, 0.1f));
-        auto colored2 = std::make_shared<Lambertian>(glm::vec3(0.8f, 0.2f, 0.1f));
-        auto emissive = std::make_shared<DiffuseLight>(glm::vec3(1.0f, 1.0f, 1.0f));
+
+        // auto per1 = std::make_shared<NoiseTexture>(glm::vec3(1, 1, 1), 1.0f);
+        // auto noiseMat = std::make_shared<Lambertian>(per1);
+        auto metal = std::make_shared<Metal>(glm::vec3(1.0f, 1.0f, 1.0f), 0.5);
+
+        auto emissive = std::make_shared<DiffuseLight>(std::make_shared<NoiseTexture>(glm::vec3(1, 1, 1), 1.0f));
         auto mirror = std::make_shared<Dieletric>(glm::vec3(1.0f, 1.0f, 1.0f), 2.0f);
 
         scene.add(std::make_shared<Plane>("P1", glm::vec3(0.0f, -0.6f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), mirror));
+
         scene.add(std::make_shared<Triangle>("T1", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), emissive));
         scene.add(std::make_shared<Triangle>("T2", glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(-1.0f, 1.0f, 0.0f), emissive));
-        scene.add(std::make_shared<Sphere>("S1", glm::vec3(0.0f, 0.5f, 0.8f), 0.5f, earth));
+    
+        scene.add(std::make_shared<Sphere>("S1", glm::vec3(0.0f, 0.5f, 0.8f), 0.5f, metal));
     }
 
     virtual void OnUpdate(float ts) override

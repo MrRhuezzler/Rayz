@@ -2,14 +2,11 @@ cmake_minimum_required(VERSION 3.12)
 project(rayz)
 
 set(CMAKE_CXX_STANDARD 17)
-# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pg")
-# set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pg")
-
-# message(${CMAKE_CXX_FLAGS_DEBUG})
 
 add_subdirectory(libs)
 
 add_compile_definitions(GLEW_STATIC)
+add_compile_definitions(MT)
 
 find_package(TBB REQUIRED)
 find_package(OpenGL REQUIRED)
@@ -27,16 +24,21 @@ include_directories(
 add_executable(
     ${PROJECT_NAME}
     main.cpp
+
     src/objects/plane.cpp
     src/objects/sphere.cpp
     src/objects/triangle.cpp
+
     src/textures/checkerTexture.cpp
     src/textures/imageTexture.cpp
     src/textures/solidColorTexture.cpp
+    src/textures/noise.cpp
+
     src/materials/lambertian.cpp
     src/materials/diffuseLight.cpp
     src/materials/metal.cpp
     src/materials/dielectric.cpp
+ 
     src/boundingBox.cpp
     src/camera.cpp
     src/hittable.cpp

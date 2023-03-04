@@ -4,3 +4,4 @@
 #include "textures/solidColor.h"
 #include "textures/checker.h"
 #include "textures/image.h"
+#include "textures/noise.h"

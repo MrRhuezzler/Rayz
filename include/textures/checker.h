@@ -1,5 +1,5 @@
 #pragma once
-#include "textures/texture.h"
+#include "texture.h"
 
 class CheckerTexture : public Texture
 {

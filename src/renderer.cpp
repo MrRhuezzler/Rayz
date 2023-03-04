@@ -48,7 +48,6 @@ void Renderer::render(const Scene &scene, const Camera &camera)
     if (frameIndex == 1)
         memset(accumulationData, 0, finalImage->getWidth() * finalImage->getHeight() * sizeof(glm::vec4));
 
-#define MT
 #ifndef MT
     for (int y = 0; y < finalImage->getHeight(); y++)
     {

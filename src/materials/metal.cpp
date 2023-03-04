@@ -24,7 +24,7 @@ bool Metal::scatter(const Ray &ray, const HitPayload &payload, glm::vec3 &attenu
 bool Metal::renderUI()
 {
     bool moved = false;
-    if (ImGui::DragFloat("###", &fuzz, 0.001f))
+    if (ImGui::DragFloat("##", &fuzz, 0.001f))
         moved = true;
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     {

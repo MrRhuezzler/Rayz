@@ -92,17 +92,17 @@ bool Scene::renderUI()
         for (int i = 0; i < objects.size(); i++)
         {
             const auto &object = objects[i];
-            // ImGui::PushID(i + 1);
             if (ImGui::TreeNode((void *)(intptr_t)i, object->name.c_str(), i))
             {
+                ImGui::PushID(i + 1);
                 float x = ImGui::GetContentRegionAvail().x;
                 ImGui::PushItemWidth(x);
                 if (object->renderUI())
                     moved = true;
                 ImGui::PopItemWidth();
+                ImGui::PopID();
                 ImGui::TreePop();
             }
-            // ImGui::PopID();
         }
         ImGui::TreePop();
     }
