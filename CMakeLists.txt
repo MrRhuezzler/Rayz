@@ -24,12 +24,25 @@ include_directories(
     ${OPENGL_INCLUDE_DIRS}
 )
 
-file(GLOB_RECURSE SRC_FILES ${PROJECT_SOURCE_DIR}/src/*.cpp)
-
 add_executable(
     ${PROJECT_NAME}
     main.cpp
-    ${SRC_FILES}
+    src/objects/plane.cpp
+    src/objects/sphere.cpp
+    src/objects/triangle.cpp
+    src/textures/checkerTexture.cpp
+    src/textures/imageTexture.cpp
+    src/textures/solidColorTexture.cpp
+    src/materials/lambertian.cpp
+    src/materials/diffuseLight.cpp
+    src/materials/metal.cpp
+    src/materials/dielectric.cpp
+    src/boundingBox.cpp
+    src/camera.cpp
+    src/hittable.cpp
+    src/material.cpp
+    src/renderer.cpp
+    src/scene.cpp
 )
 
 target_link_libraries(

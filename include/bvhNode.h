@@ -1,6 +1,7 @@
 #pragma once
 
 #include "hittable.h"
+#include "scene.h"
 
 class BVHNode : public Hittable
 {

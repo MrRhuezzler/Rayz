@@ -1,60 +1,10 @@
-#include "imgui.h"
 #include <iostream>
-#include "stb/stb_image.h"
+#include "imgui.h"
 #include "glm/gtc/type_ptr.hpp"
-#include "texture.h"
+#include "stb/stb_image.h"
 #include "jug/fileDialog.h"
+#include "textures/image.h"
 
-SolidColor::SolidColor(const glm::vec3 &color)
-    : color(color)
-{
-}
-
-glm::vec3 SolidColor::value(float u, float v, const glm::vec3 &p) const
-{
-    return color;
-}
-
-bool SolidColor::renderUI()
-{
-    bool moved = false;
-    if (ImGui::ColorEdit3("###", glm::value_ptr(color)))
-        moved = true;
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-    {
-        ImGui::SetTooltip("Albedo");
-    }
-    return moved;
-}
-
-CheckerTexture::CheckerTexture(glm::vec3 odd, glm::vec3 even)
-    : CheckerTexture(std::make_shared<SolidColor>(odd), std::make_shared<SolidColor>(even))
-{
-}
-
-CheckerTexture::CheckerTexture(const std::shared_ptr<Texture> &odd, const std::shared_ptr<Texture> &even)
-    : odd(odd), even(even)
-{
-}
-
-glm::vec3 CheckerTexture::value(float u, float v, const glm::vec3 &p) const
-{
-    float sines = glm::sin(10.0f * p.x) * glm::sin(10.0f * p.y) * glm::sin(10.0f * p.z);
-    if (sines < 0.0f)
-        return odd->value(u, v, p);
-    else
-        return even->value(u, v, p);
-}
-
-bool CheckerTexture::renderUI()
-{
-    bool moved = false;
-    if (odd->renderUI())
-        moved = true;
-    if (even->renderUI())
-        moved = true;
-    return moved;
-}
 
 ImageTexture::ImageTexture()
     : data(nullptr), width(0), height(0), stride(0), fileName("textures/default.jpeg")
@@ -129,3 +79,4 @@ bool ImageTexture::renderUI()
 
     return moved;
 }
+

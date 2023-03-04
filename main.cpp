@@ -7,6 +7,11 @@
 #include "jug/timer.h"
 #include "jug/input.h"
 
+#include "objects.h"
+#include "textures.h"
+#include "materials.h"
+#include "scene.h"
+
 #include "camera.h"
 #include "renderer.h"
 // #include "bvhNode.h"
@@ -26,8 +31,8 @@ public:
         auto mirror = std::make_shared<Dieletric>(glm::vec3(1.0f, 1.0f, 1.0f), 2.0f);
 
         scene.add(std::make_shared<Plane>("P1", glm::vec3(0.0f, -0.6f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), mirror));
-        scene.add(std::make_shared<Triangle>("T1", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), colored1));
-        scene.add(std::make_shared<Triangle>("T2", glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(-1.0f, 1.0f, 0.0f), colored2));
+        scene.add(std::make_shared<Triangle>("T1", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), emissive));
+        scene.add(std::make_shared<Triangle>("T2", glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(-1.0f, 1.0f, 0.0f), emissive));
         scene.add(std::make_shared<Sphere>("S1", glm::vec3(0.0f, 0.5f, 0.8f), 0.5f, earth));
     }
 

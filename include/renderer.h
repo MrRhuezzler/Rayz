@@ -9,6 +9,7 @@
 #include "camera.h"
 #include "ray.h"
 #include "hittable.h"
+#include "scene.h"
 
 using namespace Jug;
 
