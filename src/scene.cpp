@@ -1,5 +1,8 @@
 #include "imgui.h"
 #include "scene.h"
+#include "objects.h"
+#include "materials.h"
+#include "textures.h"
 
 Scene::Scene(const std::string &name)
     : Hittable(name)
@@ -82,10 +85,46 @@ bool Scene::renderUI()
 
     if (ImGui::BeginPopup("Object List"))
     {
-        ImGui::MenuItem("element 1");
-        ImGui::MenuItem("element 2");
+        if (ImGui::MenuItem("Sphere"))
+            currentAdding = Scene::OBJECTS::SPHERE;
+        if (ImGui::MenuItem("Plane"))
+            currentAdding = Scene::OBJECTS::PLANE;
         ImGui::EndPopup();
     }
+
+    ImGui::Begin("Add Object");
+    if (currentAdding == Scene::OBJECTS::SPHERE)
+    {
+        ImGui::Text("Adding Sphere");
+        ImGui::Separator();
+
+        static char sphereNameBuf[64] = "";
+        ImGui::InputText("Name", sphereNameBuf, 64);
+
+        if (ImGui::Button("OK", ImVec2(120, 0)))
+        {
+            add(std::make_shared<Sphere>(sphereNameBuf));
+            moved = true;
+            currentAdding = Scene::OBJECTS::NONE;
+        }
+    }
+
+    else if (currentAdding == Scene::OBJECTS::PLANE)
+    {
+        ImGui::Text("Adding Plane");
+        ImGui::Separator();
+
+        static char planeNameBuf[64] = "";
+        ImGui::InputText("Name", planeNameBuf, 64);
+
+        if (ImGui::Button("OK", ImVec2(120, 0)))
+        {
+            add(std::make_shared<Plane>(planeNameBuf, glm::vec3(0.0f, -0.6f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), std::make_shared<Lambertian>(glm::vec3(1.0f, 0.0f, 0.0f))));
+            moved = true;
+            currentAdding = Scene::OBJECTS::NONE;
+        }
+    }
+    ImGui::End();
 
     if (treeopen)
     {

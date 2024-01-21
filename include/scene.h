@@ -7,6 +7,16 @@ class Scene : public Hittable
 {
 private:
     // static std:
+    enum class OBJECTS
+    {
+        NONE,
+        SPHERE,
+        PLANE,
+        TRIANGLE
+    };
+
+    Scene::OBJECTS currentAdding = Scene::OBJECTS::NONE;
+
 public:
     Scene(const std::string &name);
     Scene(const std::string &name, const std::shared_ptr<Hittable> &object);
