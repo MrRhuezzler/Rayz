@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.28)
 project(rayz)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -6,9 +6,10 @@ set(CMAKE_CXX_STANDARD 17)
 add_subdirectory(libs)
 
 add_compile_definitions(GLEW_STATIC)
-add_compile_definitions(MT)
+# add_compile_definitions(INHERENT_PARALLEL)
+add_compile_definitions(OPENMP_PARALLEL)
 
-find_package(TBB REQUIRED)
+find_package(OpenMP REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
@@ -53,8 +54,9 @@ target_link_libraries(
     ${GLEW_LIBRARIES} 
     ${OPENGL_LIBRARIES}
     jug
-    TBB::tbb
+    OpenMP::OpenMP_CXX
 )
+
 
 add_custom_target(
     copy_textures

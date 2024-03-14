@@ -36,7 +36,7 @@ void Renderer::onResize(uint32_t width, uint32_t height)
     horizontalIterator.resize(width);
     for (int i = 0; i < width; i++)
         horizontalIterator[i] = i;
-    
+
     resetFrameIndex();
 }
 
@@ -48,9 +48,9 @@ void Renderer::render(const Scene &scene, const Camera &camera)
     if (frameIndex == 1)
         memset(accumulationData, 0, finalImage->getWidth() * finalImage->getHeight() * sizeof(glm::vec4));
 
-#ifndef MT
+#if OPENMP_PARALLEL
+#pragma omp parallel for collapse(2)
     for (int y = 0; y < finalImage->getHeight(); y++)
-    {
         for (int x = 0; x < finalImage->getWidth(); x++)
         {
             auto color = perPixel(x, y);
@@ -62,8 +62,7 @@ void Renderer::render(const Scene &scene, const Camera &camera)
             accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
             imageDataToTexture[x + y * finalImage->getWidth()] = convertToABGR(accumulatedColor);
         }
-    }
-#else
+#elif INHERENT_PARALLEL
     std::for_each(std::execution::par, verticalIterator.begin(), verticalIterator.end(),
                   [this](int y)
                   {
@@ -82,6 +81,21 @@ void Renderer::render(const Scene &scene, const Camera &camera)
                                         }
                                     });
                   });
+#else
+    for (int y = 0; y < finalImage->getHeight(); y++)
+    {
+        for (int x = 0; x < finalImage->getWidth(); x++)
+        {
+            auto color = perPixel(x, y);
+            if (frameIndex < settings.maxFrames)
+                accumulationData[x + y * finalImage->getWidth()] += color;
+
+            glm::vec4 accumulatedColor = accumulationData[x + y * finalImage->getWidth()];
+            accumulatedColor /= (float)frameIndex;
+            accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
+            imageDataToTexture[x + y * finalImage->getWidth()] = convertToABGR(accumulatedColor);
+        }
+    }
 #endif
     finalImage->setData(imageDataToTexture);
 
